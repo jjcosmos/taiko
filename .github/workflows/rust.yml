@@ -36,3 +36,9 @@ jobs:
         name: taiko # optional, default is artifact
         # A file, directory or wildcard pattern that describes what to upload
         path: ./target/release/taiko.exe
+
+    - name: release-please-action
+      uses: google-github-actions/release-please-action@v3.1.2
+      with:
+        release-type: rust
+        package-name: release-please-action
