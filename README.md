@@ -11,4 +11,6 @@ Currently, taiko only supports single midi tracks, but I would like to look at g
 
 I would also like to make those pitches easier to author in the future, but for now, something like [this](https://www.inspiredacoustics.com/en/MIDI_note_numbers_and_center_frequencies) can serve as a reference.
 
-This tool is not meant to replace the beatmapping tool [Edda](https://github.com/PKBeam/Edda), but to work alongside it. I find authoring the maps in a DAW like Reaper to be easier, so this just creates a way to export that work into a readable format. At the moment, taiko does not generate an entire folder with all of the required components like info.dat, so make sure that the destination file is one of the Easy/Med/Hard files in your beatmap's directory. I would recomment backing up your work before overwriting any in-progress maps, as this tool is still a WIP.
+This tool is not meant to replace the beatmapping tool [Edda](https://github.com/PKBeam/Edda), but to work alongside it. I find authoring the maps in a DAW like Reaper to be easier, so this just creates a way to export that work into a readable format. It is important that the midi exported from your DAW contains metadata like tempo and time signature. 
+
+At the moment, taiko does not generate an entire folder with all of the required components like info.dat, so make sure that the destination file is one of the Easy/Med/Hard files in your beatmap's directory. I would recommend backing up your work before overwriting any in-progress maps, as this tool is still a WIP.
