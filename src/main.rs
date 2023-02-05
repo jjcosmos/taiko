@@ -41,16 +41,14 @@ fn main() {
         }
     };
     let args = Args::parse();
-    println!("{} -> {}", args.source, args.dest);
+    println!("converting {} -> {}", args.source, args.dest);
 
-    // If config is empty, could run through it twice to grab all used notes and just use midi order
-    // WBC: Take multiple midi tracks and parse the difficulty from the name. Sort of like a mini batch mode
+    // If config is empty, could run through it twice to grab all used notes and just use midi order?
+    // TODO: Take multiple midi tracks and parse the difficulty from the name. Sort of like a mini batch mode
 
     let input_file = args.source;
     let data = std::fs::read(input_file).unwrap();
     let smf = midly::Smf::parse(&data).unwrap();
-
-    println!("tracks: {:?} {:?}", smf.tracks.len(), smf.header.timing);
 
     if smf.tracks.len() < 1 {
         eprint!("No tracks!");
@@ -110,12 +108,11 @@ fn main() {
                             microseconds.into()
                         }
                         midly::Timing::Timecode(_f, _u) => {
-                            eprintln!("Timecode mode not implemented. Use metrical instead.");
-                            0_f64
+                            println!("Timecode mode not tested. Results may not be correct. Use metrical for best results.");
+                            1.0 / _f.as_f32() as f64 / _u as f64
                         }
                     };
                     let bpm = 60_f64 / (beat_len / 1_000_000_f64);
-                    print!("BPM: {}", bpm);
 
                     if let Some(change) = bpm_changes.last_mut() {
                         if change.time == global_beat_accumulator {
@@ -139,10 +136,9 @@ fn main() {
                 MetaMessage::TimeSignature(numerator, _denominator, _clocks_per_click, _b) => {
                     if let Some(change) = bpm_changes.last_mut() {
                         if change.time == global_beat_accumulator {
-                            // if the last one is at the same timestamp, merge them
                             change.beats_per_bar = numerator as i64;
                             change.metronome_offset = numerator as i64;
-                            // I don't know what metranome offset is
+                            // I don't know what metranome offset is. Relevant? Idk.
                         } else {
                             let mut copy = change.clone();
                             copy.beats_per_bar = numerator as i64;
