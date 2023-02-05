@@ -10,9 +10,30 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  generate:
 
     runs-on: windows-latest
+    strategy:
+      matrix:
+        toolchain:
+          - stable
+
+    steps:
+    - uses: actions/checkout@v3
+    - run: rustup update ${{ matrix.toolchain }} && rustup default ${{ matrix.toolchain }}
+    - name: Release build
+      run: cargo build --release
+    - name: Upload a Build Artifact
+      uses: actions/upload-artifact@v3.1.2
+      with:
+        # Artifact name
+        name: taiko # optional, default is artifact
+        # A file, directory or wildcard pattern that describes what to upload
+        path: ./target/release/taiko.exe
+
+  build:
+
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         toolchain:
@@ -26,12 +47,3 @@ jobs:
       run: cargo build --verbose
     - name: Run tests
       run: cargo test --verbose
-    - name: Release build
-      run: cargo build --release
-    - name: Upload a Build Artifact
-      uses: actions/upload-artifact@v3.1.2
-      with:
-        # Artifact name
-        name: taiko # optional, default is artifact
-        # A file, directory or wildcard pattern that describes what to upload
-        path: ./target/release/taiko.exe
