@@ -1,7 +1,7 @@
 Taiko is a midi-to-json tool created for the purpose of authoring beatmaps for the VR game Ragnarock.
 
 Usage is simple - just run taiko.exe and give it a source path to your midi file, and an output path for your .dat file.
-For example: `./taiko.exe my_score.mid  my_beatmap_dir/Easy.dat`
+For example: `./taiko.exe -s my_score.mid -d my_beatmap_dir/Easy.dat`
 
 Add the exe to you path if you want to be able to run it from anywhere without needing to use the entire path to the executable.
 
