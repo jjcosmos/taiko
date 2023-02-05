@@ -18,6 +18,18 @@ pub mod edda_objects {
         pub obstacles: Vec<Value>,
     }
 
+    impl Root {
+        pub fn _merge_note_events(a: &Root, b: &Root) -> Root {
+            let mut merged = a.clone();
+            let mut b_notes = b.notes.clone();
+            merged.notes.append(&mut b_notes);
+            merged
+                .notes
+                .sort_by(|i, j| i.time.partial_cmp(&j.time).unwrap());
+            merged
+        }
+    }
+
     #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
     #[serde(rename_all = "camelCase")]
     pub struct CustomData {
