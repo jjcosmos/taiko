@@ -19,14 +19,21 @@ pub mod edda_objects {
     }
 
     impl Root {
-        pub fn _merge_note_events(a: &Root, b: &Root) -> Root {
-            let mut merged = a.clone();
-            let mut b_notes = b.notes.clone();
-            merged.notes.append(&mut b_notes);
-            merged
-                .notes
-                .sort_by(|i, j| i.time.partial_cmp(&j.time).unwrap());
-            merged
+        pub fn merge_note_events_vec(data: &Vec<Root>) -> Option<Root> {
+            if let Some(first) = data.first() {
+                let mut merged = first.clone();
+                let mut notes = Vec::<Note>::new();
+                for d in data {
+                    notes.append(&mut d.notes.clone());
+                }
+
+                notes.sort_by(|i, j| i.time.partial_cmp(&j.time).unwrap());
+                merged.notes = notes;
+
+                return Some(merged);
+            } else {
+                return None;
+            }
         }
     }
 
