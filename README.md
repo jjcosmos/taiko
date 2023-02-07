@@ -4,8 +4,10 @@ Ther are currently 2 different ways to use taiko.
 
 One converts a midi file and outputs to the path of your choosing, i.e.
 `taiko convert "path_to_midi_file.mid" "path_to_output_file.dat"`
+
 Alternatively, taiko can parse a multi-track midi file for their track names, and use them as separate output files like so:
 `taiko auto "path_to_midi_file.mid" "path_to_output_folder"`
+
 Assuming you have tracks named "Easy", "Medium", and "Hard", taiko would generate "Easy.dat", "Medium.dat", and "Hard.dat".
 
 Add the exe to you path if you want to be able to run it from anywhere without needing to use the entire path to the executable.
