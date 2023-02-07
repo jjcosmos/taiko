@@ -1,13 +1,16 @@
 Taiko is a midi-to-json tool created for the purpose of authoring beatmaps for the VR game Ragnarock.
 
-Usage is simple - just run taiko.exe and give it a source path to your midi file, and an output path for your .dat file.
-For example: `./taiko.exe -s my_score.mid -d my_beatmap_dir/Easy.dat`
+Ther are currently 2 different ways to use taiko.
+
+One converts a midi file and outputs to the path of your choosing, i.e.
+`taiko convert "path_to_midi_file.mid" "path_to_output_file.dat"`
+Alternatively, taiko can parse a multi-track midi file for their track names, and use them as separate output files like so:
+`taiko auto "path_to_midi_file.mid" "path_to_output_folder"`
+Assuming you have tracks named "Easy", "Medium", and "Hard", taiko would generate "Easy.dat", "Medium.dat", and "Hard.dat".
 
 Add the exe to you path if you want to be able to run it from anywhere without needing to use the entire path to the executable.
 
-To configure which midi values are mapped to which drum, edit the array in congif.json to map drums 0-3 to their corresponding midi pitches. 
-
-Currently, taiko only supports single midi tracks, but I would like to look at giving the user the option to merge any tracks found in the midi file. 
+To interactively configure which midi values are mapped to which drum, or the output file format, run `taiko configure` 
 
 I would also like to make those pitches easier to author in the future, but for now, something like [this](https://www.inspiredacoustics.com/en/MIDI_note_numbers_and_center_frequencies) can serve as a reference.
 
