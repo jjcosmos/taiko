@@ -80,8 +80,18 @@ pub mod edda_objects {
 pub mod custom {
     use serde_derive::{Deserialize, Serialize};
 
-    #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+    #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
     pub struct Config {
         pub drum_map: Vec<u8>,
+        pub batch_output_extension: String,
+    }
+
+    impl Default for Config {
+        fn default() -> Self {
+            Config {
+                drum_map: (60..64).collect(),
+                batch_output_extension: ".dat".to_owned(),
+            }
+        }
     }
 }

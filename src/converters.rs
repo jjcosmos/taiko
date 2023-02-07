@@ -1,51 +1,229 @@
-use clap::ValueEnum;
-use midly::{MetaMessage, Smf, Track};
+use midly::{MetaMessage, Smf, TrackEvent, TrackEventKind};
 use serde_json::Value;
-use std::str;
+use std::{str, vec};
 
 use crate::json_structures::{
     custom::Config,
     edda_objects::{Bpmchange, CustomData, Note, Root},
 };
 
-pub struct MidiConverter {
+#[derive(Copy, Clone)]
+struct StampedEvent<'a> {
+    event: TrackEvent<'a>,
+    ticks_elapsed: u64,
+}
+
+struct OffsetEvent<'a> {
+    event: TrackEvent<'a>,
+    delta: u64,
+}
+
+struct TrackAsOffsets<'a> {
+    offsets: Vec<OffsetEvent<'a>>,
+}
+
+impl TrackAsOffsets<'_> {
+    fn track_name(&self) -> Option<String> {
+        for offset in self.offsets.iter() {
+            match offset.event.kind {
+                TrackEventKind::Meta(m) => {
+                    match m {
+                        MetaMessage::TrackName(name) => {
+                            return match str::from_utf8(name) {
+                                Ok(name) => Some(name.to_string()),
+                                Err(_) => None,
+                            };
+                        } ,
+                        _ => {},
+                    }
+                },
+                _ => {},
+            }
+        }
+
+        return None;
+    }
+}
+
+impl StampedEvent<'_> {
+    fn get_meta_events<'a>(events: &Vec<Vec<StampedEvent<'a>>>) -> Vec<StampedEvent<'a>> {
+        let mut ret = Vec::<StampedEvent<'a>>::new();
+        for vec in events {
+            let mut valid_events: Vec<StampedEvent> = vec
+                .iter()
+                .map(|e| *e)
+                .filter(|e| match e.event.kind {
+                    TrackEventKind::Meta(m) => match m {
+                        MetaMessage::Tempo(_) => true,
+                        MetaMessage::TimeSignature(_, _, _, _) => true,
+                        _ => false,
+                    },
+                    _ => false,
+                })
+                .collect::<Vec<StampedEvent>>();
+
+            ret.append(&mut valid_events);
+        }
+
+        ret
+    }
+
+    fn merge_events<'a>(
+        mut a: Vec<StampedEvent<'a>>,
+        mut b: Vec<StampedEvent<'a>>,
+    ) -> Vec<StampedEvent<'a>> {
+        let mut ret = Vec::<StampedEvent>::new();
+        ret.append(&mut a);
+        ret.append(&mut b);
+        ret.sort_by(|a, b| a.ticks_elapsed.partial_cmp(&b.ticks_elapsed).unwrap());
+        ret
+    }
+
+    fn is_data_track(track: &Vec<StampedEvent>) -> bool {
+        for d in track {
+            match d.event.kind {
+                TrackEventKind::Midi { channel: _, message: _ } => {
+                    return false;
+                }
+                _ => {}
+            };
+        }
+
+        return true;
+    }
+}
+
+pub struct MidiConverter<'a> {
     source: String,
-    configuration: Config,
+    configuration: &'a Config,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
-pub enum Mode {
-    Merge,
-    Batch,
-}
-
-impl MidiConverter {
-    pub fn new(source: String, configuration: Config) -> Self {
+impl<'a> MidiConverter<'a> {
+    pub fn new(source: String, configuration: &'a Config) -> Self {
         MidiConverter {
             source,
             configuration,
         }
     }
 
-    fn track_to_root(&self, track: &Track, smf: &Smf) -> Result<Root, &'static str> {
+    fn track_to_stamped(track: &Vec<TrackEvent<'a>>) -> Vec<StampedEvent<'a>> {
+        let mut total_ticks: u64 = 0;
+        let mut ret = Vec::<StampedEvent>::new();
+
+        for event in track {
+            total_ticks += event.delta.as_int() as u64;
+
+            let stamped = StampedEvent {
+                event: event.clone(),
+                ticks_elapsed: total_ticks,
+            };
+
+            ret.push(stamped);
+        }
+
+        ret
+    }
+
+    pub fn to_root_merge_notes_and_meta(&self) -> Result<Root, &'static str> {
+        if let Ok(vecs) = self.to_root_merge_meta() {
+            let strip_name: Vec<Root> = vecs.into_iter().map(|v| v.1).collect();
+            if let Some(merged) = Root::merge_note_events_vec(&strip_name) {
+                return Ok(merged);
+            }
+        }
+        Err("Failed to merge midi tracks")
+    }
+
+    pub fn to_root_merge_meta(&self) -> Result<Vec::<(String, Root)>, &'static str> {
+        let buf = std::fs::read(self.source.clone())
+            .expect("Failed to read source midi file. Please make sure the path exists.");
+        let smf = midly::Smf::parse(&buf).unwrap();
+
+        let mut track_as_stamped = Vec::<Vec<StampedEvent>>::new();
+        for track in smf.tracks.iter() {
+            track_as_stamped.push(MidiConverter::track_to_stamped(&track));
+        }
+
+        let meta_events = StampedEvent::get_meta_events(&track_as_stamped);
+
+        // Remove data track if it exists
+        track_as_stamped = track_as_stamped
+            .into_iter()
+            .filter(|t| !StampedEvent::is_data_track(t))
+            .collect();
+
+        for stamped_track in track_as_stamped.iter_mut() {
+            *stamped_track =
+                StampedEvent::merge_events(stamped_track.to_vec(), meta_events.clone());
+        }
+
+        let mut tracks_as_offsets = Vec::<TrackAsOffsets>::new();
+        for track in track_as_stamped {
+            let mut offsets = Vec::<OffsetEvent>::new();
+
+            if let Some(f) = track.first() {
+                // This assumes event 0 is at tick 0. Which should be true.
+                offsets.push(OffsetEvent {
+                    event: f.event,
+                    delta: 0,
+                });
+            }
+
+            for x in 1..track.len() {
+                let current = track[x];
+                let prev = track[x - 1];
+
+                offsets.push(OffsetEvent {
+                    event: current.event,
+                    delta: current.ticks_elapsed - prev.ticks_elapsed,
+                });
+            }
+            
+            tracks_as_offsets.push(TrackAsOffsets { offsets: offsets });
+        }
+
+        let mut roots = Vec::<(String, Root)>::new();        
+        for (i, track) in tracks_as_offsets.iter().enumerate() {
+            match self.track_to_root_from_offsets(track, &smf) {
+                Ok(root) => {
+                    let name = match track.track_name() {
+                        Some(name) => name,
+                        None => match i {
+                            0 => "Easy",
+                            1 => "Medium",
+                            2 => "Hard",
+                            _ => "OutOfBounds",
+                        }.to_string()
+                    };
+                    roots.push((name, root));
+                },
+                Err(e) => {eprintln!("{}", e);}
+            }
+        }
+
+        return Ok(roots);
+    }
+
+    fn track_to_root_from_offsets (&self, track: &TrackAsOffsets, smf: &Smf) -> Result<Root, &'static str> {
         let mut stamped_hits: Vec<Note> = vec![];
         let mut bpm_changes: Vec<Bpmchange> = vec![];
-        let mut ticks_elapsed: u128 = 0;
+        let mut ticks_elapsed: u64 = 0;
 
         let mut tick_len: f64 = 0_f64;
         let mut current_beat_len: f64 = 0.0;
         let mut global_beat_accumulator: f64 = 0.0;
 
-        for event in track {
-            ticks_elapsed = ticks_elapsed + event.delta.as_int() as u128;
+        for offset in track.offsets.iter() {
+            ticks_elapsed = ticks_elapsed + offset.delta;
             let _time_accumulator = (ticks_elapsed as f64 * tick_len) / 1_000_000_f64;
+
             global_beat_accumulator += if current_beat_len != 0.0 {
-                event.delta.as_int() as f64 / current_beat_len
+                offset.delta as f64 / current_beat_len
             } else {
                 0.0
             };
 
-            match event.kind {
+            match offset.event.kind {
                 midly::TrackEventKind::Midi {
                     channel: _,
                     message,
@@ -149,72 +327,5 @@ impl MidiConverter {
         };
 
         Ok(json_data)
-    }
-
-    pub fn to_root_vec_by_track_name(&self) -> Result<Vec<(String, Root)>, &'static str> {
-        let input_file = &self.source;
-        let data = std::fs::read(input_file).unwrap();
-        let smf = midly::Smf::parse(&data).unwrap();
-
-        if smf.tracks.len() < 1 {
-            return Err("No tracks!");
-        }
-
-        let mut res = Vec::<(String, Root)>::new();
-
-        for track in &smf.tracks {
-            if let Ok(root) = self.track_to_root(track, &smf) {
-                res.push((MidiConverter::get_track_name(track), root));
-            }
-        }
-
-        Ok(res)
-    }
-
-    fn get_track_name(track: &Track) -> String {
-        for e in track {
-            match e.kind {
-                midly::TrackEventKind::Meta(m) => match m {
-                    MetaMessage::TrackName(name) => {
-                        return str::from_utf8(name).unwrap_or_default().to_string()
-                    }
-                    _ => {}
-                },
-                _ => {}
-            }
-        }
-        // TODO: Might be better to toss out an error here with the track index
-        // Or better yet, option, and assign Easy Medium Hard off of index
-        return "Track Name Unknown".to_owned();
-    }
-
-    pub fn to_root_merged(&self) -> Result<Root, &'static str> {
-        let input_file = &self.source;
-        let data = std::fs::read(input_file).unwrap();
-        let smf = midly::Smf::parse(&data).unwrap();
-
-        if smf.tracks.len() < 1 {
-            return Err("No tracks!");
-        }
-
-        // Need an option for merge ..
-        // Maybe merge OR extract files?
-        // TODO: how to impl ...
-        // Maybe --multi_track_parsing merge / --multi_track_parsing generate
-        // Multi track default for taiko convert --src --dest file
-        // Single with split for taiko batch --src --root_folder
-
-        let mut data = Vec::<Root>::new();
-        for t in &smf.tracks {
-            if let Ok(d) = self.track_to_root(&t, &smf) {
-                data.push(d);
-            }
-        }
-
-        if let Some(merged) = Root::merge_note_events_vec(&data) {
-            Ok(merged)
-        } else {
-            Err("Failed to merge midi tracks.")
-        }
     }
 }
