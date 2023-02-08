@@ -7,7 +7,7 @@ There are currently 2 different ways to use taiko.
 2) Taiko can parse a multi-track midi file for their track names, and use them as separate output files like so:
 `taiko auto "path_to_midi_file.mid" "path_to_output_folder"`
 
-Assuming you have tracks named "Easy", "Medium", and "Hard", taiko would generate "Easy.dat", "Medium.dat", and "Hard.dat".
+Assuming you have tracks named "Easy", "Normal", and "Hard", taiko would generate "Easy.dat", "Normal.dat", and "Hard.dat".
 To interactively configure which midi values are mapped to which drum, or the output file format, run `taiko configure` 
 
 

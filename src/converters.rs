@@ -190,7 +190,7 @@ impl<'a> MidiConverter<'a> {
                         Some(name) => name,
                         None => match i {
                             0 => "Easy",
-                            1 => "Medium",
+                            1 => "Normal",
                             2 => "Hard",
                             _ => "OutOfBounds",
                         }.to_string()
