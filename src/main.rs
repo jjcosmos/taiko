@@ -9,6 +9,7 @@ use std::path::PathBuf;
 use clap::Parser;
 use clap::Subcommand;
 use eframe::egui;
+use eframe::egui::Id;
 use json_structures::custom::Config;
 use json_structures::edda_objects::Root;
 
@@ -174,6 +175,41 @@ impl MyApp {
 
 impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        egui::SidePanel::right(Id::new("right frame")).default_width(80_f32).show(ctx, |ui|{
+            for (i, midi) in self.config.drum_map.iter_mut().enumerate() {
+                ui.with_layout(egui::Layout::top_down_justified(eframe::emath::Align::Min), |ui| {
+                    ui.label(format!("Drum {}:", i));
+                    ui.add(egui::DragValue::new(midi));
+                    *midi = u8::clamp(*midi, 0, 127);
+                });
+            }
+
+            ui.with_layout(egui::Layout::top_down_justified(eframe::emath::Align::Min), |ui| {
+                if ui.button("Save Config").clicked() {
+                    match get_or_create_file_rw(&Path::new("config.json")) {
+                        Ok(mut file) => {
+                            self.save_config_app(&self.config.clone(), &mut file);
+                        }
+                        Err(e) => {
+                            self.log_str(format!("Could not save config: {}", e));
+                        }
+                    };
+                }
+            });  
+        });
+
+        egui::TopBottomPanel::bottom(Id::new("console")).show(ctx, |ui| {
+            let layout = egui::Layout::top_down(eframe::emath::Align::Min).with_cross_justify(false);
+            ui.with_layout(layout , |ui|{
+                if !self.log.is_empty() {
+                    ui.label("Log:");
+                        for log_line in &self.log {
+                            ui.label(log_line);
+                        }
+                }
+            });
+        });
+
         egui::CentralPanel::default().show(ctx, |ui| {
             egui::ComboBox::from_label("File Output Type")
                 .selected_text(format!("{}", self.output_type))
@@ -213,9 +249,13 @@ impl eframe::App for MyApp {
             });
 
             if let Some(source) = &self.source_path {
+                let def = source.as_str();
+                let split = source.split(std::path::MAIN_SEPARATOR).collect::<Vec<&str>>();
+                let name = split.last().unwrap_or(&def);
+
                 ui.horizontal(|ui| {
                     ui.label("Source:");
-                    ui.monospace(source);
+                    ui.monospace(name.to_string());
                 });
             }
 
@@ -230,39 +270,26 @@ impl eframe::App for MyApp {
             if let Some(picked_path) = &self.output_path {
                 let path = match self.output_type {
                     ComboBoxConversion::SingleOutput => {
-                        format!("{}\\{:?}.dat", &picked_path, self.difficulty)
+                        format!("{}{}{:?}.dat", &picked_path, std::path::MAIN_SEPARATOR, self.difficulty)
                     }
                     ComboBoxConversion::MultiOutput => format!(
-                        "{}\\{:?}, {:?}, {:?}.dat",
+                        "{}{}{:?}, {:?}, {:?}.dat",
                         &picked_path,
+                        std::path::MAIN_SEPARATOR,
                         Difficulty::Easy,
                         Difficulty::Normal,
                         Difficulty::Hard
                     ),
                 };
+
+                let def = path.as_str();
+                let split = picked_path.split(std::path::MAIN_SEPARATOR).collect::<Vec<&str>>();
+                let output_name = split.last().unwrap_or(&def);
+
                 ui.horizontal(|ui| {
                     ui.label("Output:");
-                    ui.monospace(path);
+                    ui.monospace(output_name.to_string());
                 });
-            }
-
-            for (i, midi) in self.config.drum_map.iter_mut().enumerate() {
-                ui.horizontal(|ui| {
-                    ui.label(format!("Drum {}:", i));
-                    ui.add(egui::DragValue::new(midi));
-                    *midi = u8::clamp(*midi, 0, 127);
-                });
-            }
-
-            if ui.button("Save Config").clicked() {
-                match get_or_create_file_rw(&Path::new("config.json")) {
-                    Ok(mut file) => {
-                        self.save_config_app(&self.config.clone(), &mut file);
-                    }
-                    Err(e) => {
-                        self.log_str(format!("Could not save config: {}", e));
-                    }
-                };
             }
 
             if let (Some(source), Some(output)) =
@@ -313,15 +340,6 @@ impl eframe::App for MyApp {
                         }
                     };
                 }
-            }
-
-            if !self.log.is_empty() {
-                ui.group(|ui| {
-                    ui.label("Log:");
-                    for log_line in &self.log {
-                        ui.label(log_line);
-                    }
-                });
             }
         });
     }
