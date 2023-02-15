@@ -45,8 +45,7 @@ fn main() {
     let args: Vec<_> = std::env::args().collect();
     if args.len() > 1 {
         run_cli()
-    }
-    else {
+    } else {
         run_gui()
     }
 }
@@ -157,14 +156,13 @@ impl MyApp {
         match serde_json::to_string_pretty(config) {
             Ok(json_str) => {
                 match file.set_len(0) {
-                    Ok(_) => {},
+                    Ok(_) => {}
                     Err(e) => self.log_str(format!("Failed to save config: {}", e)),
                 };
                 match file.write_all(json_str.as_bytes()) {
                     Ok(_) => self.log_str(format!("Saved config!")),
                     Err(e) => self.log_str(format!("Failed to save config: {}", e)),
                 };
-                    
             }
             Err(e) => {
                 self.log_str(format!("{}", e));
@@ -175,37 +173,46 @@ impl MyApp {
 
 impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        egui::SidePanel::right(Id::new("right frame")).default_width(80_f32).show(ctx, |ui|{
-            for (i, midi) in self.config.drum_map.iter_mut().enumerate() {
-                ui.with_layout(egui::Layout::top_down_justified(eframe::emath::Align::Min), |ui| {
-                    ui.label(format!("Drum {}:", i));
-                    ui.add(egui::DragValue::new(midi));
-                    *midi = u8::clamp(*midi, 0, 127);
-                });
-            }
-
-            ui.with_layout(egui::Layout::top_down_justified(eframe::emath::Align::Min), |ui| {
-                if ui.button("Save Config").clicked() {
-                    match get_or_create_file_rw(&Path::new("config.json")) {
-                        Ok(mut file) => {
-                            self.save_config_app(&self.config.clone(), &mut file);
-                        }
-                        Err(e) => {
-                            self.log_str(format!("Could not save config: {}", e));
-                        }
-                    };
+        egui::SidePanel::right(Id::new("right frame"))
+            .default_width(80_f32)
+            .show(ctx, |ui| {
+                for (i, midi) in self.config.drum_map.iter_mut().enumerate() {
+                    ui.with_layout(
+                        egui::Layout::top_down_justified(eframe::emath::Align::Min),
+                        |ui| {
+                            ui.label(format!("Drum {}:", i));
+                            ui.add(egui::DragValue::new(midi));
+                            *midi = u8::clamp(*midi, 0, 127);
+                        },
+                    );
                 }
-            });  
-        });
+
+                ui.with_layout(
+                    egui::Layout::top_down_justified(eframe::emath::Align::Min),
+                    |ui| {
+                        if ui.button("Save Config").clicked() {
+                            match get_or_create_file_rw(&Path::new("config.json")) {
+                                Ok(mut file) => {
+                                    self.save_config_app(&self.config.clone(), &mut file);
+                                }
+                                Err(e) => {
+                                    self.log_str(format!("Could not save config: {}", e));
+                                }
+                            };
+                        }
+                    },
+                );
+            });
 
         egui::TopBottomPanel::bottom(Id::new("console")).show(ctx, |ui| {
-            let layout = egui::Layout::top_down(eframe::emath::Align::Min).with_cross_justify(false);
-            ui.with_layout(layout , |ui|{
+            let layout =
+                egui::Layout::top_down(eframe::emath::Align::Min).with_cross_justify(false);
+            ui.with_layout(layout, |ui| {
                 if !self.log.is_empty() {
                     ui.label("Log:");
-                        for log_line in &self.log {
-                            ui.label(log_line);
-                        }
+                    for log_line in &self.log {
+                        ui.label(log_line);
+                    }
                 }
             });
         });
@@ -250,7 +257,9 @@ impl eframe::App for MyApp {
 
             if let Some(source) = &self.source_path {
                 let def = source.as_str();
-                let split = source.split(std::path::MAIN_SEPARATOR).collect::<Vec<&str>>();
+                let split = source
+                    .split(std::path::MAIN_SEPARATOR)
+                    .collect::<Vec<&str>>();
                 let name = split.last().unwrap_or(&def);
 
                 ui.horizontal(|ui| {
@@ -270,7 +279,12 @@ impl eframe::App for MyApp {
             if let Some(picked_path) = &self.output_path {
                 let path = match self.output_type {
                     ComboBoxConversion::SingleOutput => {
-                        format!("{}{}{:?}.dat", &picked_path, std::path::MAIN_SEPARATOR, self.difficulty)
+                        format!(
+                            "{}{}{:?}.dat",
+                            &picked_path,
+                            std::path::MAIN_SEPARATOR,
+                            self.difficulty
+                        )
                     }
                     ComboBoxConversion::MultiOutput => format!(
                         "{}{}{:?}, {:?}, {:?}.dat",
@@ -283,7 +297,9 @@ impl eframe::App for MyApp {
                 };
 
                 let def = path.as_str();
-                let split = picked_path.split(std::path::MAIN_SEPARATOR).collect::<Vec<&str>>();
+                let split = picked_path
+                    .split(std::path::MAIN_SEPARATOR)
+                    .collect::<Vec<&str>>();
                 let output_name = split.last().unwrap_or(&def);
 
                 ui.horizontal(|ui| {
@@ -305,12 +321,18 @@ impl eframe::App for MyApp {
                                 Ok(r) => {
                                     let mut path_buf = PathBuf::new();
                                     path_buf.push(output);
-                                    path_buf.push(format!("{}{}", self.difficulty, &self.config.batch_output_extension));
-                                    self.write_output_app(&path_buf
-                                        .into_os_string()
-                                        .into_string()
-                                        .unwrap_or_default(), &r);
-                                },
+                                    path_buf.push(format!(
+                                        "{}{}",
+                                        self.difficulty, &self.config.batch_output_extension
+                                    ));
+                                    self.write_output_app(
+                                        &path_buf
+                                            .into_os_string()
+                                            .into_string()
+                                            .unwrap_or_default(),
+                                        &r,
+                                    );
+                                }
                                 Err(e) => self.log_str(format!("Error: {}", e)),
                             };
                         }
