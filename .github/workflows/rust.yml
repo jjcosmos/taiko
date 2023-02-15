@@ -2,9 +2,9 @@ name: test
 
 on:
   push:
-    branches: [ "taiko-gui" ]
+    branches: [ "main, taiko_gui" ]
   pull_request:
-    branches: [ "taiko-gui" ]
+    branches: [ "main, taiko_gui" ]
 
 env:
   CARGO_TERM_COLOR: always
