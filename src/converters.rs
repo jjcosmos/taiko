@@ -26,18 +26,16 @@ impl TrackAsOffsets<'_> {
     fn track_name(&self) -> Option<String> {
         for offset in self.offsets.iter() {
             match offset.event.kind {
-                TrackEventKind::Meta(m) => {
-                    match m {
-                        MetaMessage::TrackName(name) => {
-                            return match str::from_utf8(name) {
-                                Ok(name) => Some(name.to_string()),
-                                Err(_) => None,
-                            };
-                        } ,
-                        _ => {},
+                TrackEventKind::Meta(m) => match m {
+                    MetaMessage::TrackName(name) => {
+                        return match str::from_utf8(name) {
+                            Ok(name) => Some(name.to_string()),
+                            Err(_) => None,
+                        };
                     }
+                    _ => {}
                 },
-                _ => {},
+                _ => {}
             }
         }
 
@@ -82,7 +80,10 @@ impl StampedEvent<'_> {
     fn is_data_track(track: &Vec<StampedEvent>) -> bool {
         for d in track {
             match d.event.kind {
-                TrackEventKind::Midi { channel: _, message: _ } => {
+                TrackEventKind::Midi {
+                    channel: _,
+                    message: _,
+                } => {
                     return false;
                 }
                 _ => {}
@@ -134,7 +135,7 @@ impl<'a> MidiConverter<'a> {
         Err("Failed to merge midi tracks")
     }
 
-    pub fn to_root_merge_meta(&self) -> Result<Vec::<(String, Root)>, &'static str> {
+    pub fn to_root_merge_meta(&self) -> Result<Vec<(String, Root)>, &'static str> {
         let buf = std::fs::read(self.source.clone())
             .expect("Failed to read source midi file. Please make sure the path exists.");
         let smf = midly::Smf::parse(&buf).unwrap();
@@ -178,11 +179,11 @@ impl<'a> MidiConverter<'a> {
                     delta: current.ticks_elapsed - prev.ticks_elapsed,
                 });
             }
-            
+
             tracks_as_offsets.push(TrackAsOffsets { offsets: offsets });
         }
 
-        let mut roots = Vec::<(String, Root)>::new();        
+        let mut roots = Vec::<(String, Root)>::new();
         for (i, track) in tracks_as_offsets.iter().enumerate() {
             match self.track_to_root_from_offsets(track, &smf) {
                 Ok(root) => {
@@ -193,18 +194,25 @@ impl<'a> MidiConverter<'a> {
                             1 => "Normal",
                             2 => "Hard",
                             _ => "OutOfBounds",
-                        }.to_string()
+                        }
+                        .to_string(),
                     };
                     roots.push((name, root));
-                },
-                Err(e) => {eprintln!("{}", e);}
+                }
+                Err(e) => {
+                    eprintln!("{}", e);
+                }
             }
         }
 
         return Ok(roots);
     }
 
-    fn track_to_root_from_offsets (&self, track: &TrackAsOffsets, smf: &Smf) -> Result<Root, &'static str> {
+    fn track_to_root_from_offsets(
+        &self,
+        track: &TrackAsOffsets,
+        smf: &Smf,
+    ) -> Result<Root, &'static str> {
         let mut stamped_hits: Vec<Note> = vec![];
         let mut bpm_changes: Vec<Bpmchange> = vec![];
         let mut ticks_elapsed: u64 = 0;
