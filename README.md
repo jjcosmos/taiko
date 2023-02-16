@@ -1,18 +1,24 @@
 Taiko is a midi-to-json tool created for the purpose of authoring beatmaps for the VR game Ragnarock.
 
-There are currently 2 different ways to use taiko.
-1) Converts a midi file and outputs to the path of your choosing, i.e.
-`taiko convert "path_to_midi_file.mid" "path_to_output_file.dat"`
+## How To:**
 
-2) Taiko can parse a multi-track midi file for their track names, and use them as separate output files like so:
-`taiko auto "path_to_midi_file.mid" "path_to_output_folder"`
+### File Output type (single/multi):
+- Single - Takes a midi file and convert it to a single .dat file.
+- Multi - Takes a midi file and parses out multiple tracks into .dat files corresponding to the track names.
 
-Assuming you have tracks named "Easy", "Normal", and "Hard", taiko would generate "Easy.dat", "Normal.dat", and "Hard.dat".
-To interactively configure which midi values are mapped to which drum, or the output file format, run `taiko configure` 
+### Source:
+- The source midi file to convert. The midi file MUST contain metadata such as tempo and time signature - otherwise the results will be nonsense.
 
+### Destination:
+- The folder the .dat file/files are output to. As always, back up any work before overwriting.
 
-In the event your editor does not show midi pitch values, use something like [this](https://www.inspiredacoustics.com/en/MIDI_note_numbers_and_center_frequencies).
+### Configuration (Right Panel):
+- Map drums to the midi pitches of your choosing. Save the config to have the app remember your choices.
+
+*In the event your editor does not show midi pitch values, use something like [this](https://www.inspiredacoustics.com/en/MIDI_note_numbers_and_center_frequencies).*
+
+## Disclaimer
 
 This tool is not meant to replace the beatmapping tool [Edda](https://github.com/PKBeam/Edda), but to work alongside it. I find authoring the maps in a DAW like Reaper to be easier, so this just creates a way to export that work into a readable format. It is important that the midi exported from your DAW contains metadata like tempo and time signature. 
 
-At the moment, taiko does not generate an entire folder with all of the required components like info.dat, so make sure that the destination file is one of the Easy/Med/Hard files in your beatmap's directory. I would recommend backing up your work before overwriting any in-progress maps, as this tool is still a WIP.
+At the moment, taiko does not generate an entire folder with all of the required components like info.dat, so make sure that the destination file is one of the Easy/Med/Hard files in your beatmap's directory. I would recommend backing up your work before overwriting any in-progress maps, as this tool is still a WIP. *Because it does not generate info.dat, make sure bpm is manually set in edda, as it seems to ignore a bpm change at global beat 0.*
