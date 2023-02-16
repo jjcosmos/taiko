@@ -1,5 +1,7 @@
 Taiko is a midi-to-json tool created for the purpose of authoring beatmaps for the VR game Ragnarock.
 
+![Screenshot](https://github.com/jjcosmos/taiko/blob/main/Screenshot.png)
+
 ## How To:
 
 ### File Output type (single/multi):
@@ -21,4 +23,6 @@ Taiko is a midi-to-json tool created for the purpose of authoring beatmaps for t
 
 This tool is not meant to replace the beatmapping tool [Edda](https://github.com/PKBeam/Edda), but to work alongside it. I find authoring the maps in a DAW like Reaper to be easier, so this just creates a way to export that work into a readable format. It is important that the midi exported from your DAW contains metadata like tempo and time signature. 
 
-At the moment, taiko does not generate an entire folder with all of the required components like info.dat, so make sure that the destination file is one of the Easy/Med/Hard files in your beatmap's directory. I would recommend backing up your work before overwriting any in-progress maps, as this tool is still a WIP. *Because it does not generate info.dat, make sure bpm is manually set in edda, as it seems to ignore a bpm change at global beat 0.*
+At the moment, taiko does not generate an entire folder with all of the required components like info.dat, so make sure that the destination folder is in your beatmap's directory. I would recommend backing up your work before overwriting any in-progress maps, as this tool is still a WIP. 
+
+*Because it does not generate info.dat, make sure bpm is manually set in edda, as it seems to ignore a bpm change at global beat 0.*
