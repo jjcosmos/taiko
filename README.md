@@ -1,6 +1,6 @@
 Taiko is a midi-to-json tool created for the purpose of authoring beatmaps for the VR game Ragnarock.
 
-## How To:**
+## How To:
 
 ### File Output type (single/multi):
 - Single - Takes a midi file and convert it to a single .dat file.
