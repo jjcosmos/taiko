@@ -4,9 +4,13 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use clap::Parser;
 use eframe::egui::{self, Id};
 
 use crate::{converters::MidiConverter, json_structures::custom::Config, Args, Commands};
+
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+const NAME: &str = env!("CARGO_PKG_NAME");
 
 #[derive(Default)]
 pub struct TaikoApp {
@@ -17,6 +21,7 @@ pub struct TaikoApp {
     pub config: Config,
     pub log: Vec<String>,
 }
+
 
 #[derive(PartialEq, Debug)]
 pub enum ComboBoxConversion {
@@ -63,6 +68,35 @@ impl Default for ComboBoxConversion {
 }
 
 impl TaikoApp {
+    pub fn from_config(config: Config) -> Self{
+        TaikoApp {
+            config: config,
+            ..Default::default()
+        }
+    }
+
+    pub fn run_gui(self) {
+        let options = eframe::NativeOptions {
+            drag_and_drop_support: true,
+            initial_window_size: Some(egui::vec2(570.0, 300.0)),
+            ..Default::default()
+        };
+    
+        let title = format!("{} v{}", NAME, VERSION);
+        eframe::run_native(
+            title.as_str(),
+            options,
+            Box::new(|_cc| {
+                Box::new(self)
+            }),
+        );
+    }
+    
+    pub fn run_cli(self) {
+        let args = Args::parse();
+        handle_cli_input(args, self.config);
+    }
+
     fn log_str(&mut self, msg: String) {
         println!("{}", msg);
         self.log.push(msg);
