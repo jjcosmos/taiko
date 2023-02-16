@@ -1,5 +1,5 @@
 use std::{
-    fs::{File, OpenOptions},
+    fs::File,
     io::{self, stdout, Read, Write},
     path::{Path, PathBuf},
 };
@@ -7,7 +7,7 @@ use std::{
 use clap::Parser;
 use eframe::egui::{self, Id};
 
-use crate::{converters::MidiConverter, json_structures::custom::Config, Args, Commands};
+use crate::{converters::MidiConverter, file_io, json_structures::custom::Config, Args, Commands};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const NAME: &str = env!("CARGO_PKG_NAME");
@@ -21,7 +21,6 @@ pub struct TaikoApp {
     pub config: Config,
     pub log: Vec<String>,
 }
-
 
 #[derive(PartialEq, Debug)]
 pub enum ComboBoxConversion {
@@ -68,7 +67,7 @@ impl Default for ComboBoxConversion {
 }
 
 impl TaikoApp {
-    pub fn from_config(config: Config) -> Self{
+    pub fn from_config(config: Config) -> Self {
         TaikoApp {
             config: config,
             ..Default::default()
@@ -81,17 +80,11 @@ impl TaikoApp {
             initial_window_size: Some(egui::vec2(570.0, 300.0)),
             ..Default::default()
         };
-    
+
         let title = format!("{} v{}", NAME, VERSION);
-        eframe::run_native(
-            title.as_str(),
-            options,
-            Box::new(|_cc| {
-                Box::new(self)
-            }),
-        );
+        eframe::run_native(title.as_str(), options, Box::new(|_cc| Box::new(self)));
     }
-    
+
     pub fn run_cli(self) {
         let args = Args::parse();
         handle_cli_input(args, self.config);
@@ -164,7 +157,7 @@ impl TaikoApp {
                     egui::Layout::top_down_justified(eframe::emath::Align::Min),
                     |ui| {
                         if ui.button("Save Config").clicked() {
-                            match get_or_create_file_rw(&Path::new("config.json")) {
+                            match file_io::get_or_create_file_rw(&Path::new("config.json")) {
                                 Ok(mut file) => {
                                     self.save_config_app(&self.config.clone(), &mut file);
                                 }
@@ -342,6 +335,29 @@ impl TaikoApp {
             }
         });
     }
+
+    pub fn get_or_create_config() -> Config {
+        let path = Path::new("config.json");
+
+        match file_io::get_or_create_file_rw(&path) {
+            Ok(mut file) => {
+                let mut buffer = String::new();
+                file.read_to_string(&mut buffer).unwrap_or_default();
+                match serde_json::from_str(buffer.as_str()) {
+                    Ok(config) => config,
+                    Err(_) => {
+                        file_io::save_config(&Config::default(), &mut file);
+                        eprintln!("Failed to read config. Using default.");
+                        return Config::default();
+                    }
+                }
+            }
+            Err(_) => {
+                eprintln!("Failed to read config. Using default.");
+                return Config::default();
+            }
+        }
+    }
 }
 
 impl eframe::App for TaikoApp {
@@ -358,7 +374,7 @@ pub fn handle_cli_input(args: Args, config: Config) {
             source,
             output_file,
         } => match MidiConverter::new(source, &config).to_root_merge_notes_and_meta() {
-            Ok(r) => write_output(&output_file, &r),
+            Ok(r) => file_io::write_output_json(&output_file, &r),
             Err(e) => eprintln!("Error: {}", e),
         },
         Commands::Auto {
@@ -370,7 +386,7 @@ pub fn handle_cli_input(args: Args, config: Config) {
                     let mut path_buf = PathBuf::new();
                     path_buf.push(output_folder.clone());
                     path_buf.push(format!("{}{}", &res.0, &config.batch_output_extension));
-                    write_output(
+                    file_io::write_output_json(
                         &path_buf.into_os_string().into_string().unwrap_or_default(),
                         &res.1,
                     );
@@ -434,78 +450,14 @@ pub fn handle_cli_input(args: Args, config: Config) {
                 batch_output_extension: batch_extension,
             };
 
-            match get_or_create_file_rw(&Path::new("config.json")) {
+            match file_io::get_or_create_file_rw(&Path::new("config.json")) {
                 Ok(mut file) => {
-                    save_config(&new_config, &mut file);
+                    file_io::save_config(&new_config, &mut file);
                 }
                 Err(e) => {
                     eprintln!("Could not save config: {}", e);
                 }
             };
         }
-    }
-}
-
-pub fn save_config(config: &Config, file: &mut File) {
-    match serde_json::to_string_pretty(config) {
-        Ok(json_str) => {
-            file.set_len(0).expect("Failed to write config.");
-            file.write_all(json_str.as_bytes())
-                .expect("Failed to write config.");
-        }
-        Err(e) => {
-            eprintln!("{}", e);
-        }
-    };
-}
-
-pub fn get_or_create_file_rw(path: &Path) -> Result<File, std::io::Error> {
-    if !path.exists() {
-        OpenOptions::new()
-            .read(true)
-            .write(true)
-            .create(true)
-            .open(path)
-    } else {
-        OpenOptions::new().read(true).write(true).open(path)
-    }
-}
-
-pub fn get_or_create_config() -> Config {
-    let path = Path::new("config.json");
-
-    match get_or_create_file_rw(&path) {
-        Ok(mut file) => {
-            let mut buffer = String::new();
-            file.read_to_string(&mut buffer).unwrap_or_default();
-            match serde_json::from_str(buffer.as_str()) {
-                Ok(config) => config,
-                Err(_) => {
-                    save_config(&Config::default(), &mut file);
-                    eprintln!("Failed to read config. Using default.");
-                    return Config::default();
-                }
-            }
-        }
-        Err(_) => {
-            eprintln!("Failed to read config. Using default.");
-            return Config::default();
-        }
-    }
-}
-
-pub fn write_output(path: &String, data: &crate::json_structures::edda_objects::Root) {
-    let file_name = path;
-    match File::create(file_name) {
-        Ok(mut file) => {
-            println!("Writing to {} ...", file_name);
-            file.write_all(
-                serde_json::to_string_pretty(data)
-                    .unwrap_or_default()
-                    .as_bytes(),
-            )
-            .expect("Failed to serialize data");
-        }
-        Err(e) => eprintln!("Failed to create file {}: {}", path, e),
     }
 }

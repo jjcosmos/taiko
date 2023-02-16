@@ -2,10 +2,10 @@
 
 use clap::Parser;
 use clap::Subcommand;
-use taiko_app::get_or_create_config;
 use taiko_app::TaikoApp;
 
 mod converters;
+mod file_io;
 mod json_structures;
 mod taiko_app;
 
@@ -30,7 +30,7 @@ enum Commands {
 }
 
 fn main() {
-    let config = get_or_create_config();
+    let config = TaikoApp::get_or_create_config();
     let app = TaikoApp::from_config(config);
 
     let args: Vec<_> = std::env::args().collect();

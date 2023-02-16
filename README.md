@@ -27,5 +27,7 @@ At the moment, taiko does not generate an entire folder with all of the required
 
 *Because it does not generate info.dat, make sure bpm is manually set in edda, as it seems to ignore a bpm change at global beat 0.*
 
+I am also fairly new to the rust lang, so this is a bit of a learning project.
+
 #### Like what I'm doing?
 <a href='https://ko-fi.com/jjcosmos' target='_blank'><img height='35' style='border:0px;height:34px;' src='https://az743702.vo.msecnd.net/cdn/kofi3.png?v=0' border='0' alt='Buy Me a Coffee at ko-fi.com' />
