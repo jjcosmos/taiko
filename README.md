@@ -1,4 +1,4 @@
-Taiko is a midi-to-json tool created for the purpose of authoring beatmaps for the VR game Ragnarock.
+Taiko is a midi-to-json tool created for the purpose of authoring beatmaps for the VR game [Ragnarock](https://www.ragnarock-vr.com/home).
 
 ![Screenshot](https://github.com/jjcosmos/taiko/blob/main/Screenshot.png)
 
