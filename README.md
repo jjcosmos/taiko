@@ -28,4 +28,4 @@ At the moment, taiko does not generate an entire folder with all of the required
 *Because it does not generate info.dat, make sure bpm is manually set in edda, as it seems to ignore a bpm change at global beat 0.*
 
 #### Like what I'm doing?
-<script type='text/javascript' src='https://storage.ko-fi.com/cdn/widget/Widget_2.js'></script><script type='text/javascript'>kofiwidget2.init('Support Me on Ko-fi', '#29abe0', 'E1E2IS6TG');kofiwidget2.draw();</script> 
+<a href='https://ko-fi.com/jjcosmos' target='_blank'><img height='35' style='border:0px;height:34px;' src='https://az743702.vo.msecnd.net/cdn/kofi3.png?v=0' border='0' alt='Buy Me a Coffee at ko-fi.com' />
