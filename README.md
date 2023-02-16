@@ -26,3 +26,6 @@ This tool is not meant to replace the beatmapping tool [Edda](https://github.com
 At the moment, taiko does not generate an entire folder with all of the required components like info.dat, so make sure that the destination folder is in your beatmap's directory. I would recommend backing up your work before overwriting any in-progress maps, as this tool is still a WIP. 
 
 *Because it does not generate info.dat, make sure bpm is manually set in edda, as it seems to ignore a bpm change at global beat 0.*
+
+#### Like what I'm doing?
+<script type='text/javascript' src='https://storage.ko-fi.com/cdn/widget/Widget_2.js'></script><script type='text/javascript'>kofiwidget2.init('Support Me on Ko-fi', '#29abe0', 'E1E2IS6TG');kofiwidget2.draw();</script> 
